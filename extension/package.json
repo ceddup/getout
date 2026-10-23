@@ -4,6 +4,7 @@
   "displayName": "getout",
   "description": "%description%",
   "version": "2.0.0",
+  "icon": "icon.png",
   "license": "MIT",
   "repository": {
     "type": "git",
