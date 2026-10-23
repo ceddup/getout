@@ -1,0 +1,26 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+      - name: Extension tests
+        run: node --test
+      - name: Installer tests
+        shell: powershell
+        run: .\test\install.tests.ps1
+      # Skips (exit 0, with a message) when the runner has no VS Code command line.
+      - name: Installer smoke test
+        shell: powershell
+        run: .\test\install.smoke.ps1

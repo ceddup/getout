@@ -1,0 +1,5 @@
+{
+  "description": "Opens linked files in their default Windows application instead of a VS Code tab.",
+  "command.openAsText": "Open in VS Code (text)",
+  "config.externalTypes": "File extensions opened in their default Windows application instead of VS Code (for example \".drawio\"). Executable, script and macro-enabled types are always ignored."
+}

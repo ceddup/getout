@@ -1,0 +1,4 @@
+docs/dev/
+node_modules/
+dist/
+.superpowers/

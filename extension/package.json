@@ -1,0 +1,63 @@
+{
+  "name": "getout",
+  "publisher": "ceddup",
+  "displayName": "getout",
+  "description": "%description%",
+  "version": "2.0.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ceddup/getout"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "configuration": {
+      "title": "getout",
+      "properties": {
+        "getout.externalTypes": {
+          "type": "array",
+          "scope": "application",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            ".md", ".html", ".pdf", ".png", ".jpg", ".jpeg", ".gif", ".svg",
+            ".drawio", ".vsdx", ".docx", ".xlsx", ".pptx", ".odt", ".ods"
+          ],
+          "description": "%config.externalTypes%"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "getout.openAsText",
+        "title": "%command.openAsText%"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "getout.openAsText",
+          "when": "resourceScheme == file && !explorerResourceIsFolder",
+          "group": "navigation@100"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "getout.openAsText",
+          "when": "resourceScheme == file",
+          "group": "1_open@100"
+        }
+      ]
+    }
+  }
+}

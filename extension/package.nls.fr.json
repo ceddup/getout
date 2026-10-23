@@ -1,0 +1,5 @@
+{
+  "description": "Ouvre les fichiers cités dans leur application Windows par défaut plutôt que dans un onglet VS Code.",
+  "command.openAsText": "Ouvrir dans VS Code (texte)",
+  "config.externalTypes": "Extensions de fichier ouvertes dans leur application Windows par défaut plutôt que dans VS Code (par exemple « .drawio »). Les types exécutables, scripts et à macros sont toujours ignorés."
+}
