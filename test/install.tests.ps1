@@ -221,7 +221,7 @@ try {
         Assert (Same-Bytes ([IO.File]::ReadAllBytes((Join-Path $ext 'package.json'))) (Read-Entry 'extension/package.json')) 'package.json copied as is'
         [xml]$man = $utf8.GetString((Read-Entry 'extension.vsixmanifest'))
         $id = $man.PackageManifest.Metadata.Identity
-        Assert (($id.Publisher + '.' + $id.Id) -ceq 'ceddup.getout') "manifest identity is ceddup.getout ($($id.Publisher).$($id.Id))"
+        Assert (($id.Publisher + '.' + $id.Id) -ceq 'CedricDDesigns.getout') "manifest identity is CedricDDesigns.getout ($($id.Publisher).$($id.Id))"
         Assert ($id.Version -ceq [string]$pkg.version) "manifest version is the package.json version ($($id.Version))"
         Assert ($man.PackageManifest.Version -ceq '2.0.0') 'manifest format version 2.0.0'
         Assert ($man.PackageManifest.Installation.InstallationTarget.Id -ceq 'Microsoft.VisualStudio.Code') 'manifest targets VS Code'

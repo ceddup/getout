@@ -22,7 +22,10 @@ param(
 
 $script:BeginMarker = '<!-- getout:begin -->'
 $script:EndMarker = '<!-- getout:end -->'
-$script:ExtensionId = 'ceddup.getout'
+$script:ExtensionId = 'CedricDDesigns.getout'
+# The id of getout 2.0.0, removed by install and uninstall: both ids active would hand every file
+# to Windows twice.
+$script:LegacyExtensionId = 'ceddup.getout'
 $script:Messages = $null
 $script:UiLang = 'en'
 $script:ExitCode = 1
@@ -40,8 +43,8 @@ $script:RepoArchive = 'https://github.com/ceddup/getout/archive/{0}.zip'
 $script:FallbackMessages = @{
     v1_installed      = '{0} holds getout 1 (local web server): uninstall it first with its own script (powershell -ExecutionPolicy Bypass -File "{0}\uninstall.ps1"), then run this script again.'
     agent_removed     = 'getout rule removed for {0}: {1}'
-    extension_removed = 'VS Code extension ceddup.getout removed.'
-    left_extension    = 'the VS Code extension ceddup.getout'
+    extension_removed = 'VS Code extension CedricDDesigns.getout removed.'
+    left_extension    = 'the VS Code extension CedricDDesigns.getout'
     uninstall_no_code = 'VS Code command line not found: the extension was not checked. If VS Code is installed elsewhere, run this script again with -CodeCli.'
     uninstall_done    = 'getout is uninstalled.'
     uninstall_left    = 'Could not remove: {0}'
@@ -516,13 +519,13 @@ function Get-CodeDirArgs {
     return $a
 }
 
-# The version of ceddup.getout that VS Code lists, $null if it is not listed, '?' if VS Code
+# The version of extension $Id that VS Code lists, $null if it is not listed, '?' if VS Code
 # could not list its extensions (neither installed nor removed for sure).
 function Get-ExtensionVersion {
-    param([string]$Cli)
+    param([string]$Cli, [string]$Id = $script:ExtensionId)
     $r = Invoke-CodeCli -Cli $Cli -Arguments (@('--list-extensions', '--show-versions') + @(Get-CodeDirArgs))
     if ($r.Code -ne 0) { return '?' }
-    $rx = '^' + [regex]::Escape($script:ExtensionId) + '@(\S+)$'
+    $rx = '^' + [regex]::Escape($Id) + '@(\S+)$'
     foreach ($line in ($r.Out -split "`r?`n")) {
         $m = [regex]::Match($line.Trim(), $rx, [Text.RegularExpressions.RegexOptions]::IgnoreCase)
         if ($m.Success) { return $m.Groups[1].Value }
@@ -668,6 +671,9 @@ function Invoke-Install {
         $names = @(Resolve-AgentName $selection $prevState $interactive)
 
         # 1. Extension
+        if (Get-ExtensionVersion $cli $script:LegacyExtensionId) {
+            [void](Invoke-CodeCli -Cli $cli -Arguments (@('--uninstall-extension', $script:LegacyExtensionId) + @(Get-CodeDirArgs)))
+        }
         $extDir = [IO.Path]::Combine($src.Dir, 'extension')
         $version = [string](Read-JsonFile ([IO.Path]::Combine($extDir, 'package.json'))).version
         $vsixDir = New-TempDir 'getout-vsix-'
@@ -714,6 +720,9 @@ function Invoke-Uninstall {
     $left = @()
     $cli = Find-CodeCli
     if ($cli) {
+        if (Get-ExtensionVersion $cli $script:LegacyExtensionId) {
+            [void](Invoke-CodeCli -Cli $cli -Arguments (@('--uninstall-extension', $script:LegacyExtensionId) + @(Get-CodeDirArgs)))
+        }
         $r = Invoke-CodeCli -Cli $cli -Arguments (@('--uninstall-extension', $script:ExtensionId) + @(Get-CodeDirArgs))
         if (Get-ExtensionVersion $cli) { $left += (Get-Message -Key 'left_extension' -Lang $script:UiLang) }
         elseif ($r.Code -eq 0) { Write-Msg 'extension_removed' }

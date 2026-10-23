@@ -1,6 +1,6 @@
 {
   "name": "getout",
-  "publisher": "ceddup",
+  "publisher": "CedricDDesigns",
   "displayName": "getout",
   "description": "%description%",
   "version": "2.0.0",
@@ -16,6 +16,9 @@
     "Other"
   ],
   "main": "./extension.js",
+  "extensionKind": [
+    "ui"
+  ],
   "activationEvents": [
     "onStartupFinished"
   ],

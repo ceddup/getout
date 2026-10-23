@@ -104,7 +104,7 @@ function Get-RealMark {
     $marks = @($items | ForEach-Object { if (Test-Path -LiteralPath $_) { (Get-Item -LiteralPath $_).LastWriteTimeUtc.Ticks } else { 'absent' } })
     $real = Join-Path $home0 '.vscode\extensions'
     if (Test-Path -LiteralPath $real) {
-        $marks += @(Get-ChildItem -LiteralPath $real -Directory -Filter 'ceddup.getout*' | ForEach-Object { $_.Name })
+        $marks += @(Get-ChildItem -LiteralPath $real -Directory -Filter '*.getout*' | ForEach-Object { $_.Name })
     }
     return ($marks -join ',')
 }
@@ -138,16 +138,26 @@ try {
     Assert ($r.Code -eq 1) "uninstall refused (exit code $($r.Code))"
     Assert (Same-Bytes $v1State (Read-Bytes (Join-Path $v1Dir 'state.json'))) 'v1 state.json untouched by uninstall'
 
-    # --- 1. first install, in French, for Claude Code
-    Write-Host 'Step 1: install -Lang fr -Agents claude'
+    # --- 1. first install, in French, for Claude Code, over getout 2.0.0 (ceddup.getout)
+    Write-Host 'Step 1: install -Lang fr -Agents claude, over ceddup.getout'
+    $legacySrc = Join-Path $tmp 'legacy'
+    Copy-Item -LiteralPath (Join-Path $root 'extension') -Destination $legacySrc -Recurse
+    $legacyPkg = Join-Path $legacySrc 'package.json'
+    $legacyJson = [IO.File]::ReadAllText($legacyPkg, $utf8).Replace('"publisher": "CedricDDesigns"', '"publisher": "ceddup"')
+    [IO.File]::WriteAllText($legacyPkg, $legacyJson, $utf8)
+    $legacyVsix = Join-Path $tmp 'legacy.vsix'
+    New-Vsix -SourceDir $legacySrc -OutFile $legacyVsix
+    [void](Invoke-CodeCli -Cli $cli -Arguments @('--install-extension', $legacyVsix, '--extensions-dir', $extDir, '--user-data-dir', $userData))
+    Assert ((Get-TestExtension) -contains "ceddup.getout@$version") 'ceddup.getout installed before the install'
     $r = Invoke-Child $installPs1 (Test-Args @('-Yes', '-Lang', 'fr', '-Agents', 'claude'))
+    Assert (@(Get-TestExtension | Where-Object { $_ -like 'ceddup.getout@*' }).Count -eq 0) 'ceddup.getout removed by the install'
     Assert ($r.Code -eq 0) "exit code 0 (got $($r.Code))"
     Assert $r.Closed 'output closed when the installer exits'
     Assert ($r.Out.Contains("getout $version est install${eacute}") -and
         -not $r.Out.Contains([string][char]0xFFFD)) 'French verdict readable as UTF-8'
-    Assert ((Get-TestExtension) -contains "ceddup.getout@$version") "VS Code lists ceddup.getout@$version in the test folder"
-    Assert (Test-Path -LiteralPath (Join-Path $extDir "ceddup.getout-$version\extension.js")) 'extension files unpacked in the test folder'
-    Assert ((Get-Registered).Contains('ceddup.getout')) 'extension registered in extensions.json'
+    Assert ((Get-TestExtension) -contains "CedricDDesigns.getout@$version") "VS Code lists CedricDDesigns.getout@$version in the test folder"
+    Assert (Test-Path -LiteralPath (Join-Path $extDir "CedricDDesigns.getout-$version\extension.js")) 'extension files unpacked in the test folder'
+    Assert ((Get-Registered) -like '*CedricDDesigns.getout*') 'extension registered in extensions.json'
     $b = Read-Bytes $claudeMd
     Assert ($b.Length -ge 3 -and $b[0] -eq 0xEF -and $b[1] -eq 0xBB -and $b[2] -eq 0xBF) 'CLAUDE.md keeps its BOM'
     $t = $utf8.GetString($b)
@@ -169,15 +179,15 @@ try {
     Assert ($r.Code -eq 0) "exit code 0 (got $($r.Code))"
     Assert ($r.Out.Contains("install${eacute}")) 'still in French'
     Assert (Same-Bytes $claude1 (Read-Bytes $claudeMd)) 'CLAUDE.md unchanged: still one block'
-    Assert ((Get-TestExtension) -contains "ceddup.getout@$version") 'extension still listed'
+    Assert ((Get-TestExtension) -contains "CedricDDesigns.getout@$version") 'extension still listed'
 
     # --- 3. uninstall
     Write-Host 'Step 3: uninstall'
     $r = Invoke-Child (Join-Path $root 'uninstall.ps1') (Test-Args @('-Yes'))
     Assert ($r.Code -eq 0) "exit code 0 (got $($r.Code))"
-    Assert (@(Get-TestExtension | Where-Object { $_ -like 'ceddup.getout@*' }).Count -eq 0) 'extension no longer listed'
+    Assert (@(Get-TestExtension | Where-Object { $_ -like 'CedricDDesigns.getout@*' }).Count -eq 0) 'extension no longer listed'
     # The CLI unregisters the extension; VS Code deletes its unregistered folder at its next start.
-    Assert (-not (Get-Registered).Contains('ceddup.getout')) 'extension no longer registered in extensions.json'
+    Assert (-not ((Get-Registered) -like '*CedricDDesigns.getout*')) 'extension no longer registered in extensions.json'
     Assert (Same-Bytes $claudeOrig (Read-Bytes $claudeMd)) 'CLAUDE.md restored byte for byte'
     Assert (-not (Test-Path -LiteralPath $stateDir)) 'state folder removed'
 }
