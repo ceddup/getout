@@ -64,6 +64,7 @@ If you installed the earlier localhost version, run its uninstall first (the ins
 - Windows only.
 - The Claude Code VS Code extension's own tool-call rows (the files it reads or edits) still open in the editor.
 - Restart VS Code (or reload the window) after installing.
+- Agent sessions already open keep their former instructions until you start a new one. Coming from getout 1, their links (`http://localhost:8765/...`) no longer work: getout closes the browser tab such a link opens and says so in a notification.
 
 ## Uninstall
 

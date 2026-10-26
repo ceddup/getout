@@ -17,9 +17,9 @@ class TabInputCustom { constructor(uri) { this.uri = uri; } }
 class Uri { constructor(fsPath) { this.scheme = 'file'; this.fsPath = fsPath; } }
 
 /** Loads a fresh extension against a fake VS Code; returns helpers to drive it. */
-function setup({ closeResult = true, spawnMode = 'ok' } = {}) {
+function setup({ closeResult = true, spawnMode = 'ok', legacyUp = false } = {}) {
   const log = { spawned: [], warnings: [], errors: [], executed: [], closed: [] };
-  const state = { closeResult, spawnMode };
+  const state = { closeResult, spawnMode, legacyUp };
   const groups = [{ tabs: [] }, { tabs: [] }];
   const listeners = [];
   const commands = {};
@@ -31,7 +31,7 @@ function setup({ closeResult = true, spawnMode = 'ok' } = {}) {
     activeTabGroup: { activeTab: undefined },
     onDidChangeTabs: (l) => { listeners.push(l); return { dispose() {} }; },
     close: async (tab) => {
-      log.closed.push(tab.input.uri.fsPath);
+      log.closed.push(tab.input ? tab.input.uri.fsPath : tab.label);
       if (!state.closeResult) return false;
       for (const g of groups) g.tabs = g.tabs.filter((t) => t !== tab);
       fire({ closed: [tab] });
@@ -68,11 +68,21 @@ function setup({ closeResult = true, spawnMode = 'ok' } = {}) {
     },
   };
 
+  const net = {
+    connect: () => {
+      const handlers = {};
+      const socket = { setTimeout() {}, once(event, fn) { handlers[event] = fn; return socket; }, destroy() {} };
+      setImmediate(() => (state.legacyUp ? handlers.connect() : handlers.error(new Error('ECONNREFUSED'))));
+      return socket;
+    },
+  };
+
   const originalLoad = Module._load;
   const originalNow = Date.now;
   Module._load = function (request, ...rest) {
     if (request === 'vscode') return vscode;
     if (request === 'child_process') return childProcess;
+    if (request === 'net') return net;
     return originalLoad.call(this, request, ...rest);
   };
   Date.now = () => clock;
@@ -86,6 +96,13 @@ function setup({ closeResult = true, spawnMode = 'ok' } = {}) {
     open(file, { group = 0, dirty = false } = {}) {
       const tab = { input: new TabInputText(new Uri(file)), isDirty: dirty };
       groups[group].tabs.push(tab);
+      fire({ opened: [tab] });
+      return tab;
+    },
+    /** A tab of VS Code's integrated browser: no input type in the API, only a label. */
+    browse(label) {
+      const tab = { input: undefined, label, isDirty: false };
+      groups[0].tabs.push(tab);
       fire({ opened: [tab] });
       return tab;
     },
@@ -310,5 +327,49 @@ test('diff tabs are never intercepted', opts, async () => {
     env.fire({ opened: [{ input: { original: new Uri(md), modified: new Uri(md) }, isDirty: false }] });
     await tick();
     assert.equal(env.log.spawned.length, 0);
+  } finally { env.teardown(); }
+});
+
+test('getout 1 link in the integrated browser: tab closed, error shown once', opts, async () => {
+  const env = setup();
+  try {
+    const tab = env.browse('localhost:8765');
+    await tick();
+    await tick();
+    assert.deepEqual(env.log.closed, ['localhost:8765']);
+    assert.equal(env.log.errors.length, 1);
+    assert.match(env.log.errors[0], /getout 1 format/);
+    env.change(tab);
+    await tick();
+    await tick();
+    assert.equal(env.log.errors.length, 1);
+    assert.equal(env.log.spawned.length, 0);
+  } finally { env.teardown(); }
+});
+
+test('browser tab whose label becomes the getout 1 address is handled', opts, async () => {
+  const env = setup();
+  try {
+    const tab = env.browse('Browser');
+    await tick();
+    assert.equal(env.log.closed.length, 0);
+    tab.label = '127.0.0.1:8765';
+    env.change(tab);
+    await tick();
+    await tick();
+    assert.deepEqual(env.log.closed, ['127.0.0.1:8765']);
+    assert.equal(env.log.errors.length, 1);
+  } finally { env.teardown(); }
+});
+
+test('getout 1 address still served, or other browser tabs: left alone', opts, async () => {
+  const env = setup({ legacyUp: true });
+  try {
+    env.browse('localhost:8765');
+    env.browse('localhost:3000');
+    await tick();
+    await tick();
+    assert.equal(env.log.closed.length, 0);
+    assert.equal(env.log.errors.length, 0);
   } finally { env.teardown(); }
 });

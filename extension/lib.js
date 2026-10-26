@@ -81,10 +81,23 @@ function shouldOpenExternally(fsPath, types, bypass) {
   return ext !== '' && !BLOCKED.has(ext) && types.includes(ext);
 }
 
+// getout 1 linked files as http://localhost:8765/<path>, served by a local web server that
+// getout 2 dropped. Agent sessions started before the upgrade still write such links, and
+// VS Code opens them in its integrated browser, whose tab is labelled with the host.
+const LEGACY_PORT = 8765;
+const LEGACY_LABELS = ['localhost:8765', '127.0.0.1:8765'];
+
+/** True when a tab label is the one the integrated browser gives a getout 1 link. */
+function isLegacyLinkLabel(label) {
+  return typeof label === 'string' && LEGACY_LABELS.includes(label.trim().toLowerCase());
+}
+
 module.exports = {
   DEFAULT_TYPES,
   BLOCKED,
+  LEGACY_PORT,
   normalizeTypes,
   shouldOpenExternally,
   bypassKey,
+  isLegacyLinkLabel,
 };

@@ -34,6 +34,9 @@ Right-click the file in the explorer or its tab and choose **Open in VS Code (te
   right-click command.
 - Windows only. Diff tabs and files already open when VS Code starts are left alone.
 - Works in VS Code and derivatives that accept the VSIX; in a terminal, a path stays a path.
+- Links of getout 1 (`http://localhost:8765/...`), written by agent sessions started before
+  the upgrade, no longer work: getout closes the browser tab they open and shows a
+  notification. Start a new agent session.
 
 ## License
 

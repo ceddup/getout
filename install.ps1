@@ -644,7 +644,10 @@ function Write-Verdict {
     if ($list.Count -eq 0) { $list = @(Get-Message -Key 'agents_none' -Lang $script:UiLang) }
     Write-Msg 'verdict_agents' @($list -join ', ')
     if ($failed.Count -gt 0) { Write-Msg 'verdict_failed' @($failed.Count) 'Red' }
-    else { Write-Msg 'verdict_reload' }
+    else {
+        Write-Msg 'verdict_reload'
+        if (@($Agents).Count -gt 0) { Write-Msg 'verdict_sessions' }
+    }
     return $failed.Count
 }
 

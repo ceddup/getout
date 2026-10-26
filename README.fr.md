@@ -64,6 +64,7 @@ Si vous avez installé la version précédente, à serveur local, lancez d'abord
 - Windows uniquement.
 - Les lignes d'outils de l'extension VS Code de Claude Code (les fichiers qu'elle lit ou modifie) ouvrent toujours le fichier dans l'éditeur.
 - Redémarrez VS Code (ou rechargez la fenêtre) après l'installation.
+- Les sessions d'agent déjà ouvertes gardent leurs anciennes instructions jusqu'à ce que vous en ouvriez une nouvelle. En venant de getout 1, leurs liens (`http://localhost:8765/...`) ne fonctionnent plus : getout ferme l'onglet de navigateur qu'ouvre un tel lien et l'explique dans une notification.
 
 ## Désinstallation
 

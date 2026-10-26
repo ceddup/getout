@@ -8,6 +8,7 @@ const {
   normalizeTypes,
   shouldOpenExternally,
   bypassKey,
+  isLegacyLinkLabel,
 } = require('../extension/lib');
 
 const TYPES = ['.drawio', '.md'];
@@ -102,4 +103,13 @@ test('blocked list is lowercase and dotted', () => {
   for (const t of BLOCKED) {
     assert.match(t, /^\.[a-z0-9-]+$/);
   }
+});
+
+test('getout 1 link labels are recognized, other labels are not', () => {
+  assert.equal(isLegacyLinkLabel('localhost:8765'), true);
+  assert.equal(isLegacyLinkLabel('LocalHost:8765 '), true);
+  assert.equal(isLegacyLinkLabel('127.0.0.1:8765'), true);
+  assert.equal(isLegacyLinkLabel('localhost:3000'), false);
+  assert.equal(isLegacyLinkLabel('notes.md'), false);
+  assert.equal(isLegacyLinkLabel(undefined), false);
 });
