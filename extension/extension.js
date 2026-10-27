@@ -5,7 +5,7 @@ const net = require('net');
 const path = require('path');
 const { spawn } = require('child_process');
 const vscode = require('vscode');
-const { LEGACY_PORT, normalizeTypes, shouldOpenExternally, bypassKey, isLegacyLinkLabel } = require('./lib');
+const { LEGACY_PORT, normalizeTypes, shouldOpenExternally, shouldReveal, bypassKey, isLegacyLinkLabel } = require('./lib');
 
 const DEDUPE_MS = 1000; // same file handed over twice within this delay: ignore
 const BYPASS_TTL_MS = 5000; // single-use exemption of "Open in VS Code (text)"
@@ -106,12 +106,16 @@ function activate(context) {
     }
   }
 
-  function launch(uri) {
+  function launch(uri, reveal) {
     const explorer = path.join(process.env.SystemRoot || 'C:\\Windows', 'explorer.exe');
     const fail = (err) => {
       vscode.window.showErrorMessage(say('failed', { name: path.basename(uri.fsPath), error: err.message || err }));
       openAsText(uri).catch(() => {});
     };
+    if (reveal) {
+      vscode.commands.executeCommand('revealFileInOS', uri).then(undefined, fail);
+      return;
+    }
     try {
       const child = spawn(explorer, [uri.fsPath], { detached: true, stdio: 'ignore', windowsHide: false });
       child.on('error', fail);
@@ -121,7 +125,7 @@ function activate(context) {
     }
   }
 
-  async function handOver(tab, uri, key) {
+  async function handOver(tab, uri, key, reveal) {
     let closed = false;
     try {
       closed = await vscode.window.tabGroups.close(tab);
@@ -129,7 +133,7 @@ function activate(context) {
       // treated like a refused close
     }
     if (closed) {
-      launch(uri);
+      launch(uri, reveal);
     } else if (hasTab(key)) {
       textTabs.add(key); // the tab stays (e.g. save dialog cancelled): leave it alone
     }
@@ -146,7 +150,9 @@ function activate(context) {
       return;
     }
     const wasBypassed = bypass.has(key);
-    if (!shouldOpenExternally(fsPath, types, bypass)) {
+    const external = shouldOpenExternally(fsPath, types, bypass);
+    const reveal = !external && !wasBypassed && shouldReveal(fsPath);
+    if (!external && !reveal) {
       evaluated.set(tab, key);
       if (wasBypassed) textTabs.add(key);
       return;
@@ -159,7 +165,7 @@ function activate(context) {
     handovers.set(key, recent);
     if (recent.length && now - recent[recent.length - 1] < DEDUPE_MS) return;
     evaluated.set(tab, key);
-    if (recent.length >= LOOP_MAX) { // Windows sends the file straight back to VS Code
+    if (!reveal && recent.length >= LOOP_MAX) { // Windows sends the file straight back to VS Code
       textTabs.add(key);
       vscode.window.showWarningMessage(
         say('loop', { name: path.win32.basename(fsPath), ext: path.win32.extname(fsPath).toLowerCase() }),
@@ -167,7 +173,7 @@ function activate(context) {
       return;
     }
     recent.push(now);
-    handOver(tab, uri, key).catch(() => {});
+    handOver(tab, uri, key, reveal).catch(() => {});
   }
 
   /**

@@ -14,7 +14,8 @@ Windows (`explorer.exe <path>`), which opens it in the associated application: d
 `.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods`.
 
 Executable, script and macro-enabled types (`.exe`, `.bat`, `.ps1`, `.js`, `.docm`, ...) are
-never handed to Windows, even when listed.
+never handed to Windows, even when listed. Those VS Code cannot display (`.exe`, `.msi`,
+`.msix`, `.lnk`, `.iso`, ...) close their tab and are shown selected in File Explorer, never run.
 
 The setting is application-scoped: a workspace `.vscode/settings.json` cannot change it.
 

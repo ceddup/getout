@@ -5,8 +5,10 @@ const assert = require('node:assert/strict');
 const {
   DEFAULT_TYPES,
   BLOCKED,
+  REVEALED,
   normalizeTypes,
   shouldOpenExternally,
+  shouldReveal,
   bypassKey,
   isLegacyLinkLabel,
 } = require('../extension/lib');
@@ -97,6 +99,19 @@ test('bypass key is consumed even when the file is not eligible', () => {
     assert.equal(shouldOpenExternally(file, ['.exe', '.md'], bypass), false);
     assert.equal(bypass.size, 0, file);
   }
+});
+
+test('blocked binaries are revealed, scripts and documents are not', () => {
+  for (const p of ['C:\\tmp\\setup.exe', 'C:\\tmp\\SETUP.EXE', 'C:\\tmp\\setup.exe. ', 'C:\\tmp\\app.msix', 'C:\\tmp\\disk.iso']) {
+    assert.equal(shouldReveal(p), true, p);
+  }
+  for (const p of ['C:\\tmp\\run.ps1', 'C:\\tmp\\app.js', 'C:\\tmp\\go.bat', 'C:\\tmp\\readme.md', 'C:\\tmp\\Makefile']) {
+    assert.equal(shouldReveal(p), false, p);
+  }
+});
+
+test('every revealed type is blocked', () => {
+  for (const t of REVEALED) assert.equal(BLOCKED.has(t), true, t);
 });
 
 test('blocked list is lowercase and dotted', () => {

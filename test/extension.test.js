@@ -17,9 +17,9 @@ class TabInputCustom { constructor(uri) { this.uri = uri; } }
 class Uri { constructor(fsPath) { this.scheme = 'file'; this.fsPath = fsPath; } }
 
 /** Loads a fresh extension against a fake VS Code; returns helpers to drive it. */
-function setup({ closeResult = true, spawnMode = 'ok', legacyUp = false } = {}) {
-  const log = { spawned: [], warnings: [], errors: [], executed: [], closed: [] };
-  const state = { closeResult, spawnMode, legacyUp };
+function setup({ closeResult = true, spawnMode = 'ok', legacyUp = false, revealFails = false } = {}) {
+  const log = { spawned: [], warnings: [], errors: [], executed: [], closed: [], revealed: [] };
+  const state = { closeResult, spawnMode, legacyUp, revealFails };
   const groups = [{ tabs: [] }, { tabs: [] }];
   const listeners = [];
   const commands = {};
@@ -52,7 +52,12 @@ function setup({ closeResult = true, spawnMode = 'ok', legacyUp = false } = {}) 
     },
     commands: {
       registerCommand: (name, fn) => { commands[name] = fn; return { dispose() {} }; },
-      executeCommand: async (...args) => log.executed.push(args[0]),
+      executeCommand: async (...args) => {
+        log.executed.push(args[0]);
+        if (args[0] !== 'revealFileInOS') return;
+        log.revealed.push(args[1].fsPath);
+        if (state.revealFails) throw new Error('reveal failed');
+      },
     },
   };
   const childProcess = {
@@ -319,6 +324,77 @@ for (const spawnMode of ['error', 'throw']) {
     } finally { env.teardown(); }
   });
 }
+
+test('blocked binary: tab closed, file shown in File Explorer, never run', opts, async () => {
+  const env = setup();
+  try {
+    const exe = file('setup.exe');
+    env.open(exe);
+    await tick();
+    assert.deepEqual(env.log.closed, [exe]);
+    assert.deepEqual(env.log.revealed, [exe]);
+    assert.equal(env.log.spawned.length, 0);
+  } finally { env.teardown(); }
+});
+
+test('blocked text types (scripts) stay in VS Code', opts, async () => {
+  const env = setup();
+  try {
+    env.open(file('run.ps1'));
+    env.open(file('app.js'));
+    env.open(file('tool.py'));
+    await tick();
+    assert.equal(env.log.closed.length, 0);
+    assert.equal(env.log.executed.length, 0);
+    assert.equal(env.log.spawned.length, 0);
+  } finally { env.teardown(); }
+});
+
+test('open as text on a blocked binary keeps it in VS Code', opts, async () => {
+  const env = setup();
+  try {
+    const exe = file('tool.exe');
+    await env.commands['getout.openAsText'](new Uri(exe));
+    const tab = env.open(exe);
+    env.advance(5000);
+    env.change(tab);
+    await tick();
+    assert.deepEqual(env.log.executed, ['vscode.openWith']);
+    assert.equal(env.log.closed.length, 0);
+  } finally { env.teardown(); }
+});
+
+test('repeated clicks on a binary never raise the loop warning', opts, async () => {
+  const env = setup();
+  try {
+    const exe = file('again.exe');
+    for (let i = 0; i < 4; i += 1) {
+      env.open(exe);
+      await tick();
+      env.advance(1500);
+    }
+    assert.equal(env.log.revealed.length, 4);
+    assert.equal(env.log.warnings.length, 0);
+  } finally { env.teardown(); }
+});
+
+test('reveal failure: error shown, file reopened in VS Code', opts, async () => {
+  const env = setup({ revealFails: true });
+  try {
+    const exe = file('broken.exe');
+    env.open(exe);
+    await tick();
+    await tick();
+    assert.equal(env.log.errors.length, 1);
+    assert.match(env.log.errors[0], /could not open/);
+    assert.deepEqual(env.log.executed, ['revealFileInOS', 'vscode.openWith']);
+    const reopened = env.open(exe); // what openWith does: bypass key is consumed
+    env.advance(5000);
+    env.change(reopened);
+    await tick();
+    assert.equal(env.log.revealed.length, 1);
+  } finally { env.teardown(); }
+});
 
 test('diff tabs are never intercepted', opts, async () => {
   const env = setup();

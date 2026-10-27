@@ -35,6 +35,14 @@ const BLOCKED = new Set([
   '.jnlp', '.wsb', '.rdp', '.iso', '.img', '.vhd', '.vhdx',
 ]);
 
+// Blocked binaries VS Code cannot display: instead of a dead tab, they are
+// shown selected in File Explorer, never run. Blocked text types (scripts,
+// interpreters) stay in VS Code, where they can be read and edited.
+const REVEALED = new Set([
+  '.exe', '.com', '.scr', '.cpl', '.msi', '.msp', '.msix', '.msixbundle',
+  '.appx', '.appxbundle', '.lnk', '.iso', '.img', '.vhd', '.vhdx',
+]);
+
 /**
  * Cleans the user-configured type list: lowercase, leading dot, no
  * duplicates, no blocked extension. Anything that is not an array of
@@ -81,6 +89,11 @@ function shouldOpenExternally(fsPath, types, bypass) {
   return ext !== '' && !BLOCKED.has(ext) && types.includes(ext);
 }
 
+/** True when the file is a blocked binary to show selected in File Explorer. */
+function shouldReveal(fsPath) {
+  return REVEALED.has(effectiveExt(fsPath));
+}
+
 // getout 1 linked files as http://localhost:8765/<path>, served by a local web server that
 // getout 2 dropped. Agent sessions started before the upgrade still write such links, and
 // VS Code opens them in its integrated browser, whose tab is labelled with the host.
@@ -95,9 +108,11 @@ function isLegacyLinkLabel(label) {
 module.exports = {
   DEFAULT_TYPES,
   BLOCKED,
+  REVEALED,
   LEGACY_PORT,
   normalizeTypes,
   shouldOpenExternally,
+  shouldReveal,
   bypassKey,
   isLegacyLinkLabel,
 };

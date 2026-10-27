@@ -42,6 +42,7 @@ Si vous avez installé la version précédente, à serveur local, lancez d'abord
 
 - **L'extension.** Quand VS Code ouvre un onglet sur un fichier local d'un type de la liste, getout ferme l'onglet et passe le fichier à Windows (`explorer.exe <chemin>`), qui l'ouvre dans l'application associée. Cela vaut pour un lien cliqué dans un chat, `Ctrl+P`, l'explorateur.
 - **La liste.** Réglage `getout.externalTypes`, par défaut : `.md`, `.html`, `.pdf`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.svg`, `.drawio`, `.vsdx`, `.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods`. À modifier dans vos paramètres utilisateur.
+- **Exécutables.** Un lien vers un exécutable, un installeur, un raccourci ou une image disque (`.exe`, `.msi`, `.msix`, `.lnk`, `.iso`...), que VS Code ne sait pas afficher, ferme son onglet et montre le fichier sélectionné dans l'Explorateur de fichiers. Rien ne s'exécute tant que vous ne double-cliquez pas dessus.
 - **Éditer quand même dans VS Code.** Clic droit sur le fichier dans l'explorateur ou sur son onglet : **Ouvrir dans VS Code (texte)** (« Open in VS Code (text) » si VS Code est en anglais).
 - **La règle pour les agents.** L'installeur ajoute un court bloc, entre `<!-- getout:begin -->` et `<!-- getout:end -->`, aux instructions globales de l'agent (`~\.claude\CLAUDE.md`, `~\.codex\AGENTS.md`, `~\.gemini\GEMINI.md`). Il demande à l'agent d'écrire tout fichier cité en simple lien de chemin. Relancer l'installeur met le bloc à jour sur place.
 - **L'application par défaut est VS Code ?** Le fichier ferait des allers-retours. getout le détecte (3 passages du même fichier en 10 secondes), garde le fichier dans VS Code et affiche un avertissement : choisissez une autre application par défaut pour ce type, ou retirez-le de la liste.
@@ -52,7 +53,7 @@ Si vous avez installé la version précédente, à serveur local, lancez d'abord
 - Les exécutables, scripts, interpréteurs, fichiers Office avec macros et images disque (`.exe`, `.bat`, `.ps1`, `.js`, `.docm`, `.xlsm`, `.iso`...) figurent sur une liste noire figée : jamais confiés à Windows, même si vous les ajoutez à la liste. Les anciens `.doc`, `.xls` et `.ppt` peuvent contenir des macros et ne sont pas bloqués : ne les ajoutez qu'en connaissance de cause.
 - Le réglage est de portée application : le `.vscode/settings.json` d'un espace de travail ne peut pas le modifier.
 - Les onglets de diff ne sont jamais interceptés. Un onglet avec des modifications non enregistrées, et les onglets déjà ouverts au démarrage de VS Code, sont laissés tels quels.
-- Rien n'écoute sur le réseau. La seule chose que getout lance est `explorer.exe` sur un fichier que vous avez ouvert.
+- Rien n'écoute sur le réseau. La seule chose que getout lance est `explorer.exe` sur un fichier que vous avez ouvert, ou « Afficher dans l'Explorateur de fichiers » de VS Code pour un binaire bloqué.
 - Désactivé en mode restreint (espace de travail non approuvé).
 - L'installeur télécharge ses sources depuis ce dépôt. Il installe l'extension via la ligne de commande de VS Code, ne modifie que les fichiers d'instructions des agents (entre les balises ci-dessus) et garde un petit fichier d'état, `%LOCALAPPDATA%\getout\state.json`.
 

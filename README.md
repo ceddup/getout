@@ -42,6 +42,7 @@ If you installed the earlier localhost version, run its uninstall first (the ins
 
 - **The extension.** When VS Code opens a tab on a local file of a listed type, getout closes the tab and hands the file to Windows (`explorer.exe <path>`), which opens it in the associated application. It works for a link clicked in a chat, `Ctrl+P`, the explorer.
 - **The list.** Setting `getout.externalTypes`, default: `.md`, `.html`, `.pdf`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.svg`, `.drawio`, `.vsdx`, `.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods`. Edit it in your user settings.
+- **Executables.** A link to an executable, installer, shortcut or disk image (`.exe`, `.msi`, `.msix`, `.lnk`, `.iso`...), which VS Code cannot display, closes its tab and shows the file selected in File Explorer. Nothing runs until you double-click it.
 - **Edit in VS Code anyway.** Right-click the file in the explorer or on its tab: **Open in VS Code (text)**.
 - **The agent rule.** The installer adds a short block, between `<!-- getout:begin -->` and `<!-- getout:end -->`, to the agent's global instructions (`~\.claude\CLAUDE.md`, `~\.codex\AGENTS.md`, `~\.gemini\GEMINI.md`). It tells the agent to write every file it cites as a plain path link. Running the installer again updates the block in place.
 - **Default app is VS Code?** The file would bounce back. getout notices (3 hand-overs of the same file in 10 seconds), keeps the file in VS Code and shows a warning: pick another default app for that type, or remove it from the list.
@@ -52,7 +53,7 @@ If you installed the earlier localhost version, run its uninstall first (the ins
 - Executables, scripts, interpreters, macro-enabled Office files and disk images (`.exe`, `.bat`, `.ps1`, `.js`, `.docm`, `.xlsm`, `.iso`...) are on a fixed blocklist: never handed to Windows, even if you list them. Legacy `.doc`, `.xls` and `.ppt` can carry macros and are not blocked: add them knowingly.
 - The setting is application-scoped: a workspace's `.vscode/settings.json` cannot change it.
 - Diff tabs are never intercepted. A tab with unsaved changes, and tabs already open when VS Code starts, are left alone.
-- Nothing listens on the network. The only thing getout runs is `explorer.exe` on a file you opened.
+- Nothing listens on the network. The only thing getout runs is `explorer.exe` on a file you opened, or VS Code's Reveal in File Explorer for a blocked binary.
 - Disabled in Restricted Mode (untrusted workspace).
 - The installer downloads its sources from this repository. It installs the extension through the VS Code command line, edits only the agent instruction files (between the markers above), and keeps a small state file, `%LOCALAPPDATA%\getout\state.json`.
 
